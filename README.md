@@ -1,5 +1,5 @@
-# HLK-LD2450 Python Demo
-This is a simple Python demo for HLK-LD2450 24 GHz Radar Sensor (http://www.hlktech.net/index.php?id=1182). You can also try the app from HLK or the official PC demo. This code uses the serial port to communicate with the sensor.
+# HLK-LD2450
+This is a simple Python implementation of the serial protocol and two demos of the HLK-LD2450 24 GHz Radar Sensor (http://www.hlktech.net/index.php?id=1182). You can also try the app from HLK or the official PC demo. This code uses the serial port to communicate with the sensor.
 
 ## Prerequisites
 You need the following hardware to run this demo:
