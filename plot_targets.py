@@ -1,47 +1,34 @@
+import serial_protocol
+
 import serial
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import threading
 import queue
 
-def interpret_target(target_data):
-    x = int.from_bytes(target_data[0:2], byteorder='little', signed=True)
-    y = int.from_bytes(target_data[2:4], byteorder='little', signed=True)     
-    speed = int.from_bytes(target_data[4:6], byteorder='little', signed=True)
-    distance_resolution = int.from_bytes(target_data[6:8], byteorder='little', signed=False)
-    
-    # substract 2^15 depending if negative or positive
-    x = x if x >= 0 else -2**15 - x
-    y = y if y >= 0 else -2**15 - y
-    speed = speed if speed >= 0 else -2**15 - speed
-
-    return x, y, speed, distance_resolution
-
 def serial_reader():
     ser = serial.Serial('/dev/ttyUSB0', 256000, timeout=1)
     while True:
-        data = ser.read_until(b'\xCC')
+        data = ser.read_until(serial_protocol.report_tail)
         data_queue.put(data)
    
 def update_plot(frame):
     # Check if there is data in the queue
     while not data_queue.empty():
-        data = data_queue.get()
+        serial_protocol_line = data_queue.get()
 
         # Check if the frame header and tail are present
-        if b'\xAA\xFF\x03\x00' in data and b'\x55\xCC' in data:
-            # Extract the objective information
-            objective_data = data.split(b'\xAA\xFF\x03\x00')[1].split(b'\x55\xCC')[0]
+        if serial_protocol.report_header in serial_protocol_line and serial_protocol.report_tail in serial_protocol_line:
+            # Extract the target values
+            all_target_values = serial_protocol.read_radar_data(serial_protocol_line)    
+            
+            if all_target_values is None:
+                continue
 
-            # Interpret information for each target
-            target1_data = objective_data[0:8]
-            target2_data = objective_data[8:16]
-            target3_data = objective_data[16:24]
-
-            # Interpret information for each target
-            target1_x, target1_y, target1_speed, _ = interpret_target(target1_data)
-            target2_x, target2_y, target2_speed, _ = interpret_target(target2_data)
-            target3_x, target3_y, target3_speed, _ = interpret_target(target3_data)      
+            target1_x, target1_y, target1_speed, target1_distance_res, \
+            target2_x, target2_y, target2_speed, target2_distance_res, \
+            target3_x, target3_y, target3_speed, target3_distance_res \
+                = all_target_values
 
             # current targets
             current_targets_x = [target1_x, target2_x, target3_x]
