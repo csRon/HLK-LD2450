@@ -24,14 +24,21 @@ pip3 install -r  requirements.txt
 ```bash
 python3 print_targets.py
 ```
+![Print Demo](./gifs/targets_print.gif)
+
 
 *plot_targets.py* plots the received data from the sensor (x, y) of three targets:
 ```bash
 python3 plot_targets.py
 ```
+![Plot Demo](./gifs/targets_plot.gif)
+
 
 ## Troubleshooting
 - Check that the USB to TTL adapter is connected to the correct port:
 ```bash
 dmesg | grep tty
 ```
+
+## Notes and Disclaimer
+- There seems to be some outliers in the data which are not filtered in this implementation

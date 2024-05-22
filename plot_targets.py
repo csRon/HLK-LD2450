@@ -8,6 +8,7 @@ import queue
 
 def serial_reader():
     ser = serial.Serial('/dev/ttyUSB0', 256000, timeout=1)
+
     while True:
         data = ser.read_until(serial_protocol.report_tail)
         data_queue.put(data)

@@ -24,17 +24,17 @@ try:
         print(f'Target 1 x-coordinate: {target1_x} mm')
         print(f'Target 1 y-coordinate: {target1_y} mm')
         print(f'Target 1 speed: {target1_speed} cm/s')
-        print(f'Target 1 distance: {target1_distance_res} mm')
+        print(f'Target 1 distance res: {target1_distance_res} mm')
 
         print(f'Target 2 x-coordinate: {target2_x} mm')
         print(f'Target 2 y-coordinate: {target2_y} mm')
         print(f'Target 2 speed: {target2_speed} cm/s')
-        print(f'Target 2 distance: {target2_distance_res} mm')
+        print(f'Target 2 distance res: {target2_distance_res} mm')
 
         print(f'Target 3 x-coordinate: {target3_x} mm')
         print(f'Target 3 y-coordinate: {target3_y} mm')
         print(f'Target 3 speed: {target3_speed} cm/s')
-        print(f'Target 3 distance: {target3_distance_res} mm')
+        print(f'Target 3 distance res: {target3_distance_res} mm')
 
         print('-' * 30)
 
