@@ -20,7 +20,7 @@ pip3 install -r  requirements.txt
 ```
 
 ## Get started
-*read_serial.py* prints out the received data from the sensor (x, y, speed, distance resolution) of three targets:
+*print_targets.py* prints out the received data from the sensor (x, y, speed, distance resolution) of three targets:
 ```bash
 python3 print_targets.py
 ```
