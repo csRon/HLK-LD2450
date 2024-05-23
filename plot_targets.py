@@ -10,7 +10,7 @@ def serial_reader():
     ser = serial.Serial('/dev/ttyUSB0', 256000, timeout=1)
 
     while True:
-        data = ser.read_until(serial_protocol.report_tail)
+        data = ser.read_until(serial_protocol.REPORT_TAIL)
         data_queue.put(data)
    
 def update_plot(frame):
@@ -19,7 +19,7 @@ def update_plot(frame):
         serial_protocol_line = data_queue.get()
 
         # Check if the frame header and tail are present
-        if serial_protocol.report_header in serial_protocol_line and serial_protocol.report_tail in serial_protocol_line:
+        if serial_protocol.REPORT_HEADER in serial_protocol_line and serial_protocol.REPORT_TAIL in serial_protocol_line:
             # Extract the target values
             all_target_values = serial_protocol.read_radar_data(serial_protocol_line)    
             

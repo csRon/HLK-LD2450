@@ -1,12 +1,12 @@
 import serial
 
-command_header = bytes.fromhex('FD FC FB FA')
-command_tail = bytes.fromhex('04 03 02 01')
+COMMAND_HEADER = bytes.fromhex('FD FC FB FA')
+COMMAND_TAIL = bytes.fromhex('04 03 02 01')
 
-report_header = bytes.fromhex('AA FF 03 00')
-report_tail = bytes.fromhex('55 CC')
+REPORT_HEADER = bytes.fromhex('AA FF 03 00')
+REPORT_TAIL = bytes.fromhex('55 CC')
 
-def send_command(ser:serial.Serial, 
+def _send_command(ser:serial.Serial, 
                  intra_frame_length:bytes,
                  command_word:bytes, 
                  command_value:bytes)->bytes:
@@ -21,11 +21,24 @@ def send_command(ser:serial.Serial,
     - response (bytes): the response from the radar
     '''
     # Create the command
-    command = command_header + intra_frame_length + command_word + command_value + command_tail
-    print(command)
+    command = COMMAND_HEADER + intra_frame_length + command_word + command_value + COMMAND_TAIL
     ser.write(command)
-    response = ser.read_until(command_tail)
+    response = ser.read_until(COMMAND_TAIL)
     return response
+
+def _get_command_success(response:bytes)->bool:
+    '''
+    Check if the command was sent successfully
+    Parameters:
+    - response (bytes): the response from the radar
+    Returns:
+    - success (bool): True if the command was sent successfully, False otherwise
+    ''' 
+    success_int = int.from_bytes(response[8:10], byteorder='little', signed=True)
+    if success_int==0:
+        return True
+    else:
+        return False
 
 def enable_configuration_mode(ser:serial.Serial)->bool:
     '''
@@ -39,12 +52,13 @@ def enable_configuration_mode(ser:serial.Serial)->bool:
     command_word = bytes.fromhex('FF 00')
     command_value = bytes.fromhex('01 00')
 
-    response = send_command(ser, intra_frame_length, command_word, command_value)
-    success_int = int.from_bytes(response[8:10], byteorder='little', signed=True)
-    if success_int==0:
-        return True
+    response = _send_command(ser, intra_frame_length, command_word, command_value)
+    command_successful= _get_command_success(response)
+    if command_successful:
+        print('Configuration mode enabled')
     else:
-        return False
+        print('Configuration enable failed')
+    return command_successful
     
 def end_configuration_mode(ser:serial.Serial)->bool:
     '''
@@ -58,12 +72,13 @@ def end_configuration_mode(ser:serial.Serial)->bool:
     command_word = bytes.fromhex('FE 00')
     command_value = bytes.fromhex('')
 
-    response = send_command(ser, intra_frame_length, command_word, command_value)
-    success_int = int.from_bytes(response[8:10], byteorder='little', signed=False)
-    if success_int==0:
-        return True
+    response = _send_command(ser, intra_frame_length, command_word, command_value)
+    command_successful= _get_command_success(response)
+    if command_successful:
+        print('Configuration mode disabled')
     else:
-        return False
+        print('Configuration disable failed')
+    return command_successful
     
 def single_target_tracking(ser:serial.Serial)->bool:
     '''
@@ -77,12 +92,13 @@ def single_target_tracking(ser:serial.Serial)->bool:
     command_word = bytes.fromhex('80 00')
     command_value = bytes.fromhex('')
 
-    response = send_command(ser, intra_frame_length, command_word, command_value)
-    success_int = int.from_bytes(response[8:10], byteorder='little', signed=True)
-    if success_int==0:
-        return True
+    response = _send_command(ser, intra_frame_length, command_word, command_value)
+    command_successful= _get_command_success(response)
+    if command_successful:
+        print('Single target tracking mode enabled')
     else:
-        return False
+        print('Single target tracking mode enable failed')
+    return command_successful
     
 def multi_target_tracking(ser:serial.Serial)->bool:
     '''
@@ -96,13 +112,14 @@ def multi_target_tracking(ser:serial.Serial)->bool:
     command_word = bytes.fromhex('90 00')
     command_value = bytes.fromhex('')
 
-    response = send_command(ser, intra_frame_length, command_word, command_value)
-    success_int = int.from_bytes(response[8:10], byteorder='little', signed=True)
-    if success_int==0:
-        return True
+    response = _send_command(ser, intra_frame_length, command_word, command_value)
+    command_successful = _get_command_success(response)
+    if command_successful:
+        print('Multi target tracking mode enabled')
     else:
-        return False
-    
+        print('Multi target tracking mode enable failed')
+    return command_successful
+
 def query_target_tracking(ser:serial.Serial)->int:
     '''
     Query the target tracking mode, the default mode is multi target tracking (see docs 2.2.5)
@@ -115,12 +132,14 @@ def query_target_tracking(ser:serial.Serial)->int:
     command_word = bytes.fromhex('91 00')
     command_value = bytes.fromhex('')
 
-    response = send_command(ser, intra_frame_length, command_word, command_value)
-    success_int = int.from_bytes(response[8:10], byteorder='little', signed=True)
-    if success_int==0:
+    response = _send_command(ser, intra_frame_length, command_word, command_value)
+    command_successful = _get_command_success(response)
+    if command_successful:
         tracking_type_int = int.from_bytes(response[10:12], byteorder='little', signed=True)
+        print(f'Tracking mode: {tracking_type_int}')
         return tracking_type_int
     else:
+        print('Query target tracking mode failed')
         return None
     
 def read_firmware_version(ser:serial.Serial)->str:
@@ -135,15 +154,17 @@ def read_firmware_version(ser:serial.Serial)->str:
     command_word = bytes.fromhex('A0 00')
     command_value = bytes.fromhex('')
 
-    response = send_command(ser, intra_frame_length, command_word, command_value)
-    success_int = int.from_bytes(response[8:10], byteorder='little', signed=True)
-    if success_int==0:
+    response = _send_command(ser, intra_frame_length, command_word, command_value)
+    command_successful= _get_command_success(response)
+    if command_successful:
         firmware_type = int.from_bytes(response[10:12], byteorder='little', signed=True)
         major_version_number =  int.from_bytes(response[12:14], byteorder='little', signed=True)
         minor_version_number =  int.from_bytes(response[14:18], byteorder='little', signed=True)
         firmware_version = f'V{firmware_type}.{major_version_number}.{minor_version_number}'
+        print(f'Firmware version: {firmware_version}')
         return firmware_version
     else:
+        print('Read firmware version failed')
         return None
     
 def set_serial_port_baud_rate(ser:serial.Serial, baud_rate:int = 256000)->bool:
@@ -164,13 +185,14 @@ def set_serial_port_baud_rate(ser:serial.Serial, baud_rate:int = 256000)->bool:
     baudrate_index = possible_baud_rates.index(baud_rate)
     command_value = int(baudrate_index).to_bytes(2, byteorder='little', signed=False)
 
-    response = send_command(ser, intra_frame_length, command_word, command_value)
-    success_int = int.from_bytes(response[8:10], byteorder='little', signed=True)
-    if success_int==0:
-        return True
+    response = _send_command(ser, intra_frame_length, command_word, command_value)
+    command_successful = _get_command_success(response)
+    if command_successful:
+        print(f'Serial port baud rate set to {baud_rate}')
     else:
-        return False
-    
+        print('Set serial port baud rate failed')
+    return command_successful
+
 def restore_factory_settings(ser:serial.Serial)->bool:
     '''
     Restore the factory settings of the radar (see docs 2.2.8)
@@ -183,12 +205,13 @@ def restore_factory_settings(ser:serial.Serial)->bool:
     command_word = bytes.fromhex('A2 00')
     command_value = bytes.fromhex('')
 
-    response = send_command(ser, intra_frame_length, command_word, command_value)
-    success_int = int.from_bytes(response[8:10], byteorder='little', signed=False)
-    if success_int==0:
-        return True
+    response = _send_command(ser, intra_frame_length, command_word, command_value)
+    command_successful = _get_command_success(response)
+    if command_successful:
+        print('Factory settings restored')
     else:
-        return False
+        print('Restore factory settings failed')
+    return command_successful
 
 def restart_module(ser:serial.Serial)->bool:
     '''
@@ -202,12 +225,13 @@ def restart_module(ser:serial.Serial)->bool:
     command_word = bytes.fromhex('A3 00')
     command_value = bytes.fromhex('')
 
-    response = send_command(ser, intra_frame_length, command_word, command_value)
-    success_int = int.from_bytes(response[8:10], byteorder='little', signed=False)
-    if success_int==0:
-        return True
+    response = _send_command(ser, intra_frame_length, command_word, command_value)
+    command_successful = _get_command_success(response)
+    if command_successful:
+        print('Module restarted')
     else:
-        return False
+        print('Module restart failed')
+    return command_successful
     
 def bluetooth_setup(ser:serial.Serial, bluetooth_on:bool = True)->bool:
     '''
@@ -222,12 +246,13 @@ def bluetooth_setup(ser:serial.Serial, bluetooth_on:bool = True)->bool:
     command_word = bytes.fromhex('A4 00')
     command_value = bytes.fromhex('01 00') if bluetooth_on else bytes.fromhex('00 00')
 
-    response = send_command(ser, intra_frame_length, command_word, command_value)
-    success_int = int.from_bytes(response[8:10], byteorder='little', signed=False)
-    if success_int==0:
-        return True
+    response = _send_command(ser, intra_frame_length, command_word, command_value)
+    command_successful = _get_command_success(response)
+    if command_successful:
+        print(f'Bluetooth {"enabled" if bluetooth_on else "disabled"}')
     else:
-        return False
+        print('Bluetooth setup failed')
+    return command_successful
     
 def get_mac_address(ser:serial.Serial)->str:
     '''
@@ -241,12 +266,14 @@ def get_mac_address(ser:serial.Serial)->str:
     command_word = bytes.fromhex('A5 00')
     command_value = bytes.fromhex('01 00')
 
-    response = send_command(ser, intra_frame_length, command_word, command_value)
-    success_int = int.from_bytes(response[8:10], byteorder='little', signed=False)
-    if success_int==0:
-        mac_address = response[10:16].hex()
+    response = _send_command(ser, intra_frame_length, command_word, command_value)
+    command_successful = _get_command_success(response)
+    if command_successful:
+        mac_address = response[10:22].decode('utf-8')
+        print(f'MAC address: {mac_address}')
         return mac_address
     else:
+        print('Get MAC address failed')
         return None
     
 def query_zone_filtering(ser:serial.Serial)->tuple[13]:
@@ -265,9 +292,9 @@ def query_zone_filtering(ser:serial.Serial)->tuple[13]:
     command_word = bytes.fromhex('C1 00')
     command_value = bytes.fromhex('')
 
-    response = send_command(ser, intra_frame_length, command_word, command_value)
-    success_int = int.from_bytes(response[8:10], byteorder='little', signed=True)
-    if success_int==0:
+    response = _send_command(ser, intra_frame_length, command_word, command_value)
+    command_successful = _get_command_success(response)
+    if command_successful:
         zone_filtering_mode = int.from_bytes(response[10:12], byteorder='little', signed=True)
         region1_x1 = int.from_bytes(response[12:14], byteorder='little', signed=True)
         region1_y1 = int.from_bytes(response[14:16], byteorder='little', signed=True)
@@ -281,11 +308,13 @@ def query_zone_filtering(ser:serial.Serial)->tuple[13]:
         region3_y1 = int.from_bytes(response[30:32], byteorder='little', signed=True)
         region3_x2 = int.from_bytes(response[32:34], byteorder='little', signed=True)
         region3_y2 = int.from_bytes(response[34:36], byteorder='little', signed=True)
+        print(f'Zone filtering mode: {zone_filtering_mode}')
         return (zone_filtering_mode, 
                 region1_x1, region1_y1, region1_x2, region1_y2,
                 region2_x1, region2_y1, region2_x2, region2_y2,
                 region3_x1, region3_y1, region3_x2, region3_y2)
     else:
+        print('Query zone filtering mode failed')
         return None
     
 def set_zone_filtering(ser:serial.Serial, 
@@ -318,16 +347,17 @@ def set_zone_filtering(ser:serial.Serial,
     command_word = bytes.fromhex('C2 00')
     command_value = bytes.fromhex(f'{zone_filtering_mode:04x} {region1_x1:04x} {region1_y1:04x} {region1_x2:04x} {region1_y2:04x} {region2_x1:04x} {region2_y1:04x} {region2_x2:04x} {region2_y2:04x} {region3_x1:04x} {region3_y1:04x} {region3_x2:04x} {region3_y2:04x}')
 
-    response = send_command(ser, intra_frame_length, command_word, command_value)
-    success_int = int.from_bytes(response[8:10], byteorder='little', signed=False)
-    if success_int==0:
-        return True
+    response = _send_command(ser, intra_frame_length, command_word, command_value)
+    command_successful = _get_command_success(response)
+    if command_successful:
+        print(f'Zone filtering mode set to {zone_filtering_mode}')
     else:
-        return False
+        print('Set zone filtering mode failed')
+    return command_successful
 
 def read_radar_data(serial_port_line:bytes)->tuple[12]:
     '''
-    Read the basic mode data from the serial port line
+    Read the basic mode data from the serial port line (see docs 2.3)
     Parameters:
     - serial_port_line (bytes): the serial port line
     Returns:
@@ -336,9 +366,9 @@ def read_radar_data(serial_port_line:bytes)->tuple[12]:
         - [4-7] x, y, speed, distance_resolution of target 2
         - [8-11] x, y, speed, distance_resolution of target 3
     '''
-    
+
     # Check if the frame header and tail are present
-    if report_header in serial_port_line and report_tail in serial_port_line:
+    if REPORT_HEADER in serial_port_line and REPORT_TAIL in serial_port_line:
         # Interpret the target data
         if len(serial_port_line) == 30:
             target1_bytes = serial_port_line[4:12]
@@ -367,7 +397,9 @@ def read_radar_data(serial_port_line:bytes)->tuple[12]:
         
         # if the target data is not 17 bytes long the line is corrupted
         else:
+            print("Serial port line corrupted - not 30 bytes long")
             return None
     # if the header and tail are not present the line is corrupted
     else: 
+        print("Serial port line corrupted - header or tail not present")
         return None

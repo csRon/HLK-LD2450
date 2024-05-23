@@ -8,7 +8,7 @@ ser = serial.Serial('/dev/ttyUSB0', 256000, timeout=1)
 try:
     while True:
         # Read a line from the serial port
-        serial_port_line = ser.read_until(serial_protocol.report_tail)
+        serial_port_line = ser.read_until(serial_protocol.REPORT_TAIL)
 
         all_target_values = serial_protocol.read_radar_data(serial_port_line)
         
